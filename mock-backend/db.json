@@ -1,0 +1,59 @@
+{
+  "incidents": [
+    {
+      "id": 1,
+      "project": "POS Botillería",
+      "category": "Error crítico",
+      "status": "pending",
+      "description": "Error en el sistema de pagos",
+      "fullDescription": "El sistema muestra error 500 al procesar pagos con tarjeta de crédito. Esto ocurre de forma intermitente, aproximadamente en el 30% de las transacciones. El error aparece después de ingresar los datos de la tarjeta y presionar confirmar.",
+      "date": "2024-11-20T10:30:00Z",
+      "image": "https://picsum.photos/seed/incident1/800/600",
+      "comments": ""
+    },
+    {
+      "id": 2,
+      "project": "Agenda Lava Autos",
+      "category": "Bug visual",
+      "status": "in-progress",
+      "description": "Calendario no muestra correctamente",
+      "fullDescription": "Las citas del calendario aparecen desalineadas en dispositivos móviles. El problema solo ocurre en pantallas menores a 768px. Los eventos se superponen y no se puede leer correctamente la información.",
+      "date": "2024-11-21T14:20:00Z",
+      "image": "https://picsum.photos/seed/incident2/800/600",
+      "comments": "Revisando CSS para móviles"
+    },
+    {
+      "id": 3,
+      "project": "POS Botillería",
+      "category": "Mejora",
+      "status": "resolved",
+      "description": "Agregar opción de descuento",
+      "fullDescription": "Los usuarios solicitan poder aplicar descuentos porcentuales a productos individuales durante la venta. Actualmente solo se puede aplicar descuento al total.",
+      "date": "2024-11-19T09:15:00Z",
+      "image": "https://picsum.photos/seed/incident3/800/600",
+      "comments": "Implementado en versión 2.1.0"
+    },
+    {
+      "id": 4,
+      "project": "Sistema de Inventario",
+      "category": "Error crítico",
+      "status": "pending",
+      "description": "No sincroniza stock en tiempo real",
+      "fullDescription": "Cuando se realiza una venta, el stock no se actualiza inmediatamente en el sistema central. La sincronización tarda hasta 5 minutos, causando ventas de productos agotados.",
+      "date": "2024-11-22T11:45:00Z",
+      "image": "https://picsum.photos/seed/incident4/800/600",
+      "comments": ""
+    },
+    {
+      "id": 5,
+      "project": "Agenda Lava Autos",
+      "category": "Problema de rendimiento",
+      "status": "in-progress",
+      "description": "Carga lenta en horas peak",
+      "fullDescription": "El sistema se vuelve muy lento entre las 9:00 y 11:00 AM, cuando hay mayor cantidad de reservas. Los usuarios reportan tiempos de carga superiores a 10 segundos.",
+      "date": "2024-11-21T16:30:00Z",
+      "image": "https://picsum.photos/seed/incident5/800/600",
+      "comments": "Investigando queries de base de datos"
+    }
+  ]
+}
