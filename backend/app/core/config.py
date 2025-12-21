@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
     
+    # Admin UI credentials
+    ADMIN_USERNAME: str = "admin"
+    ADMIN_PASSWORD: str = "admin123"
+    
+    # Cloud API configuration
+    CLOUD_API_URL: str  # Required: Base URL for Cloud API (e.g., http://localhost:8001)
+    CLOUD_API_ADMIN_TOKEN: str  # Required: Bearer token for Cloud API admin endpoints
+    
     @property
     def cors_origins_list(self) -> List[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
