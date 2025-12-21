@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Campo - JEVO Admin{% endblock %}
+{% block page_title %}Editar Campo{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl">
+    <!-- Header con botón volver -->
+    <div class="mb-6">
+        <a href="/admin-ui/fields" class="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 mb-4">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Volver a Campos
+        </a>
+        <h2 class="text-xl font-semibold text-slate-900">Editando: <span class="font-mono text-blue-600">{{ field.client.code }}/{{ field.code }}</span></h2>
+    </div>
+
+    <form method="POST" action="/admin-ui/fields/{{ field.client.code }}/{{ field.code }}/edit" class="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
+                <input type="text" value="{{ field.client.name }} ({{ field.client.code }})" disabled
+                       class="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-500">
+                <p class="mt-1 text-xs text-slate-500">El cliente no se puede cambiar</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Código del Campo</label>
+                <input type="text" value="{{ field.code }}" disabled
+                       class="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-500">
+                <p class="mt-1 text-xs text-slate-500">El código no se puede modificar</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Nombre *</label>
+                <input type="text" name="name" required
+                       class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       placeholder="Ej: Fundo Norte - Paltos" value="{{ field.name }}">
+            </div>
+        </div>
+        
+        <div class="border-t border-slate-200 pt-6">
+            <h3 class="text-lg font-semibold text-slate-900 mb-4">Conexión ICC PRO</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Host/IP ICC PRO *</label>
+                    <input type="text" name="icc_db_host" required
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="192.168.1.100" value="{{ icc_credentials.host }}">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Puerto</label>
+                    <input type="number" name="icc_db_port"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           value="{{ icc_credentials.port }}">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Base de Datos</label>
+                    <input type="text" name="icc_db_name"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           value="{{ icc_credentials.dbname }}">
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Usuario</label>
+                    <input type="text" name="icc_db_user"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           value="{{ icc_credentials.user }}">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
+                    <input type="password" name="icc_db_password"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Dejar vacío para mantener actual">
+                    <p class="mt-1 text-xs text-slate-500">Solo llenar si deseas cambiar la contraseña</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-6">
+            <h3 class="text-lg font-semibold text-slate-900 mb-4">Ubicación (Opcional)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Latitud</label>
+                    <input type="number" step="0.000001" name="location_lat"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="-33.4569" value="{{ field.location_lat or '' }}">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Longitud</label>
+                    <input type="number" step="0.000001" name="location_lng"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="-70.6483" value="{{ field.location_lng or '' }}">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Zona Horaria</label>
+                    <input type="text" name="timezone"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           value="{{ field.timezone }}">
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <label class="flex items-center gap-2">
+                <input type="checkbox" name="active" value="true" {% if field.active %}checked{% endif %}
+                       class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                <span class="text-sm text-slate-700">Campo activo</span>
+            </label>
+        </div>
+        
+            <p class="text-sm text-slate-600 mb-4">Configure los aliases y mapeo de unidades/grupos específicos de este campo.</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Aliases del Campo</label>
+                    <input type="text" name="field_aliases"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Ej: las palmas oriente, lp oriente, oriente" 
+                           value="{{ nomenclature.aliases }}">
+                    <p class="mt-1 text-xs text-slate-500">Nombres alternativos para este campo (separados por comas)</p>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-semibold text-slate-900 mb-1">Mapeo de Unidades</h4>
+                    <p class="text-xs text-slate-600 mb-2">Formato: <code class="bg-slate-100 px-1 py-0.5 rounded text-xs">E11:11,once | E14:14,catorce</code> (use | para separar unidades)</p>
+                    <textarea name="units_mapping" rows="4"
+                              class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                              placeholder="E11:11,once | E14:14,catorce | E15:15,quince">{{ nomenclature.units_text }}</textarea>
+                    <p class="mt-1 text-xs text-slate-500">Mapeo de códigos de unidad a sus aliases</p>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-semibold text-slate-900 mb-1">Mapeo de Grupos</h4>
+                    <p class="text-xs text-slate-600 mb-2">Formato: <code class="bg-slate-100 px-1 py-0.5 rounded text-xs">450:cuatrocientos cincuenta | 600:seiscientos</code></p>
+                    <textarea name="groups_mapping" rows="3"
+                              class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                              placeholder="450:cuatrocientos cincuenta | 600:seiscientos">{{ nomenclature.groups_text }}</textarea>
+                    <p class="mt-1 text-xs text-slate-500">Mapeo de códigos de grupo a sus aliases</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-4 border-t border-slate-200">
+            <a href="/admin-ui/fields" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
+                Cancelar
+            </a>
+            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                💾 Guardar Cambios
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

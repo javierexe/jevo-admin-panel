@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Usuario WhatsApp - JEVO Admin{% endblock %}
+{% block page_title %}Editar Usuario WhatsApp{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl">
+    <!-- Header con botón volver -->
+    <div class="mb-6">
+        <a href="/admin-ui/whatsapp-users" class="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 mb-4">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Volver a Usuarios WhatsApp
+        </a>
+        <h2 class="text-xl font-semibold text-slate-900">Editando: <span class="font-mono text-blue-600">{{ user.phone_number }}</span></h2>
+    </div>
+
+    <form method="POST" action="/admin-ui/whatsapp-users/{{ user.id }}/edit" class="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Número de Teléfono</label>
+                <input type="text" value="{{ user.phone_number }}" disabled
+                       class="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-500">
+                <p class="mt-1 text-xs text-slate-500">El número no se puede modificar</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Nombre (opcional)</label>
+                <input type="text" name="display_name"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       placeholder="Juan Pérez" value="{{ user.display_name or '' }}">
+            </div>
+        </div>
+        
+        <div class="border-t border-slate-200 pt-6">
+            <label class="block text-sm font-medium text-slate-900 mb-3">Campos Asignados *</label>
+            {% if available_fields %}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- Columna izquierda: Campos asignados -->
+                <div class="border border-slate-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-semibold text-slate-700">✅ Asignados (<span id="assignedCount">0</span>)</h4>
+                        <button type="button" onclick="removeAll()" class="text-xs text-slate-500 hover:text-slate-700">Quitar todos</button>
+                    </div>
+                    <div id="assignedList" class="space-y-1 min-h-[200px] max-h-[400px] overflow-y-auto">
+                        <!-- Se llenan con JS -->
+                    </div>
+                </div>
+                
+                <!-- Columna derecha: Campos disponibles -->
+                <div class="border border-slate-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-semibold text-slate-700">📦 Disponibles (<span id="availableCount">0</span>)</h4>
+                        <button type="button" onclick="addAll()" class="text-xs text-slate-500 hover:text-slate-700">Agregar todos</button>
+                    </div>
+                    <div id="availableList" class="space-y-1 min-h-[200px] max-h-[400px] overflow-y-auto">
+                        <!-- Se llenan con JS -->
+                    </div>
+                </div>
+            </div>
+            <p class="mt-2 text-xs text-slate-500">Click en un campo para moverlo entre asignados y disponibles</p>
+            <!-- Inputs hidden para enviar los IDs -->
+            <div id="hiddenInputs"></div>
+            {% else %}
+            <div class="px-4 py-8 text-center border border-slate-200 rounded-lg bg-slate-50">
+                <p class="text-sm text-slate-500">No hay campos disponibles. Crea campos primero.</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div>
+            <label class="flex items-center gap-2">
+                <input type="checkbox" name="is_active" value="true" {% if user.is_active %}checked{% endif %}
+                       class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                <span class="text-sm text-slate-700">Usuario activo</span>
+            </label>
+            <p class="mt-1 text-xs text-slate-500">Los usuarios inactivos no pueden usar el bot de WhatsApp</p>
+        </div>
+        
+        <div class="flex justify-end gap-2 pt-4 border-t border-slate-200">
+            <a href="/admin-ui/whatsapp-users" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
+                Cancelar
+            </a>
+            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                💾 Guardar Cambios
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Estado de campos
+let fields = {{ available_fields|tojson }};
+let assignedIds = new Set();
+
+// Inicializar campos asignados
+fields.forEach(field => {
+    if (field.is_assigned) {
+        assignedIds.add(field.id);
+    }
+});
+
+function renderFields() {
+    const assignedList = document.getElementById('assignedList');
+    const availableList = document.getElementById('availableList');
+    const hiddenInputs = document.getElementById('hiddenInputs');
+    
+    assignedList.innerHTML = '';
+    availableList.innerHTML = '';
+    hiddenInputs.innerHTML = '';
+    
+    fields.forEach(field => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors border border-transparent hover:border-slate-200';
+        div.onclick = () => toggleField(field.id);
+        
+        const text = document.createElement('span');
+        text.className = 'text-sm text-slate-700';
+        text.textContent = field.display;
+        
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'text-slate-400 hover:text-slate-600';
+        
+        if (assignedIds.has(field.id)) {
+            button.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>';
+            button.title = 'Quitar';
+            div.appendChild(text);
+            div.appendChild(button);
+            assignedList.appendChild(div);
+            
+            // Agregar input hidden
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'field_ids';
+            input.value = field.id;
+            hiddenInputs.appendChild(input);
+        } else {
+            button.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>';
+            button.title = 'Agregar';
+            div.appendChild(button);
+            div.appendChild(text);
+            availableList.appendChild(div);
+        }
+    });
+    
+    // Actualizar contadores
+    document.getElementById('assignedCount').textContent = assignedIds.size;
+    document.getElementById('availableCount').textContent = fields.length - assignedIds.size;
+    
+    // Mostrar mensaje si no hay campos
+    if (assignedIds.size === 0) {
+        assignedList.innerHTML = '<div class="text-center py-8 text-slate-400 text-sm">Sin campos asignados</div>';
+    }
+    if (assignedIds.size === fields.length) {
+        availableList.innerHTML = '<div class="text-center py-8 text-slate-400 text-sm">Todos asignados</div>';
+    }
+}
+
+function toggleField(id) {
+    if (assignedIds.has(id)) {
+        assignedIds.delete(id);
+    } else {
+        assignedIds.add(id);
+    }
+    renderFields();
+}
+
+function addAll() {
+    fields.forEach(field => assignedIds.add(field.id));
+    renderFields();
+}
+
+function removeAll() {
+    assignedIds.clear();
+    renderFields();
+}
+
+// Renderizar al cargar
+renderFields();
+</script>
+{% endblock %}
