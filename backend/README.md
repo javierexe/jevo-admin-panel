@@ -267,6 +267,117 @@ Si usas Cloudinary, verificar que todas las credenciales estén configuradas cor
 - `passlib` - Hashing de contraseñas
 - `python-multipart` - Manejo de form-data
 - `cloudinary` - Integración con Cloudinary
+- `httpx` - Cliente HTTP (Admin UI ↔ Cloud API)
+- `jinja2` - Templates HTML (Admin UI)
+- `email-validator` - Validación de emails
+
+## 🚀 Deployment (Production)
+
+### Requisitos de Producción
+
+1. **Cloud API**: El Admin UI requiere acceso a un Cloud API desplegado (Railway u otro)
+2. **PostgreSQL**: Base de datos para el backend de incidentes
+3. **Python 3.9+**: Runtime
+4. **Variables de entorno**: Todas las configuraciones via env vars
+
+### Variables de Entorno para Producción
+
+#### Core Application
+```env
+# Database (required)
+DATABASE_URL=postgresql://user:pass@host:5432/dbname
+
+# JWT Authentication (required)
+JWT_SECRET=your-super-secret-key-change-in-production
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# CORS (adjust for your frontend domain)
+CORS_ORIGINS=https://your-admin-panel.com,https://app.example.com
+```
+
+#### Admin UI (required for Admin UI features)
+```env
+# Admin UI Basic Auth
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=change-this-secure-password
+
+# Cloud API Connection (required)
+CLOUD_API_URL=https://your-cloud-api.railway.app
+CLOUD_API_ADMIN_TOKEN=your-cloud-api-admin-bearer-token
+```
+
+#### File Upload (optional, defaults to local)
+```env
+# Upload Configuration
+UPLOAD_STORAGE=cloudinary  # Options: local, cloudinary
+MAX_FILE_SIZE=10485760  # 10MB in bytes
+
+# Cloudinary (only if UPLOAD_STORAGE=cloudinary)
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+### Deployment Command
+
+For Railway, Heroku, or similar PaaS:
+
+```bash
+# Procfile or start command:
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
+
+For manual deployment:
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run migrations
+alembic upgrade head
+
+# Start server (production)
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+### Health Checks
+
+- **API Health**: `GET /` returns `{"status": "ok"}`
+- **Docs**: `GET /docs` (Swagger UI)
+- **Admin UI**: `GET /admin-ui/clients` (requires basic auth)
+
+### Testing Production Setup
+
+Before deploying, verify contract with Cloud API:
+
+```bash
+# Set env vars and run contract check
+export CLOUD_API_URL=https://your-cloud-api.railway.app
+export CLOUD_API_ADMIN_TOKEN=your-token
+
+python scripts/contract_check.py
+```
+
+Verify Admin UI endpoints:
+
+```bash
+# Requires backend running
+export BACKEND_URL=http://localhost:8000
+export ADMIN_USERNAME=admin
+export ADMIN_PASSWORD=admin123
+
+./scripts/smoke_admin_ui.sh
+```
+
+### Security Checklist
+
+- [ ] Change `ADMIN_PASSWORD` from default
+- [ ] Use strong `JWT_SECRET` (min 32 chars random)
+- [ ] Verify `CLOUD_API_ADMIN_TOKEN` is valid
+- [ ] Set `CORS_ORIGINS` to your actual domain(s)
+- [ ] Enable HTTPS in production (handled by PaaS)
+- [ ] Never commit `.env` files (use .gitignore)
 
 ## 📄 Licencia
 

@@ -391,7 +391,11 @@ async def edit_client_form(
                 url="/admin-ui/clients?error=Cliente no encontrado",
                 status_code=303
             )
-        context = {"request": request, "client": None}
+        context = {
+            "request": request,
+            "client": {"code": client_code, "name": ""},
+            "terminology": {"unit_terms": "", "group_terms": "", "program_terms": ""}
+        }
         context.update(handle_api_error(result.error_type, result.detail))
         return templates.TemplateResponse("edit_client.html", context)
     
@@ -543,7 +547,20 @@ async def edit_field_form(
                 url="/admin-ui/fields?error=Campo no encontrado",
                 status_code=303
             )
-        context = {"request": request, "field": None}
+        context = {
+            "request": request,
+            "field": {
+                "code": field_code,
+                "name": "",
+                "client": {"code": client_code, "name": ""},
+                "active": False,
+                "location_lat": None,
+                "location_lng": None,
+                "timezone": "America/Santiago"
+            },
+            "icc_credentials": {"host": "", "port": 5432, "dbname": "", "user": ""},
+            "nomenclature": {"aliases": "", "units_text": "", "groups_text": ""}
+        }
         context.update(handle_api_error(result.error_type, result.detail))
         return templates.TemplateResponse("edit_field.html", context)
     
