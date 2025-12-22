@@ -129,7 +129,7 @@ class CloudAPIClient:
                             ok=False,
                             error_type=ErrorType.VALIDATION,
                             status=405,
-                            detail=f"Method not allowed: {method} {path}"
+                            detail=f"Method not allowed: {method} {endpoint}"
                         )
                     
                     if response.status_code == 409:
