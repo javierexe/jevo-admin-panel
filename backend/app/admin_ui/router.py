@@ -159,6 +159,176 @@ async def list_whatsapp_users(
 
 
 # =====================================================
+# WhatsApp Users CRUD endpoints  
+# =====================================================
+
+@router.post("/whatsapp-users", response_class=HTMLResponse)
+async def create_whatsapp_user(
+    request: Request,
+    username: str = Depends(verify_admin_ui),
+    cloud_client: CloudAPIClient = Depends(get_cloud_client),
+    phone_number: str = Form(...),
+    display_name: Optional[str] = Form(None),
+    field_ids: Optional[str] = Form(None)
+):
+    """Create new WhatsApp user via Cloud API"""
+    # Parse field_ids (comma-separated string from form)
+    field_ids_list = []
+    if field_ids:
+        try:
+            field_ids_list = [int(fid.strip()) for fid in field_ids.split(",") if fid.strip()]
+        except ValueError:
+            return RedirectResponse(
+                url="/admin-ui/whatsapp-users?error=IDs de campos inválidos",
+                status_code=303
+            )
+    
+    data = {
+        "phone_number": phone_number,
+        "display_name": display_name if display_name else None,
+        "field_ids": field_ids_list
+    }
+    
+    result = cloud_client.create_whatsapp_user(data)
+    
+    if result.ok:
+        return RedirectResponse(
+            url="/admin-ui/whatsapp-users?success=Usuario WhatsApp creado exitosamente",
+            status_code=303
+        )
+    
+    # On error, redirect with error message
+    if result.error_type == ErrorType.CONFLICT:
+        return RedirectResponse(
+            url=f"/admin-ui/whatsapp-users?error={result.detail or 'Conflicto: el usuario ya existe'}",
+            status_code=303
+        )
+    elif result.error_type == ErrorType.VALIDATION:
+        return RedirectResponse(
+            url=f"/admin-ui/whatsapp-users?error={result.detail or 'Error de validación'}",
+            status_code=303
+        )
+    else:
+        return RedirectResponse(
+            url=f"/admin-ui/whatsapp-users?error={result.detail or 'Error al crear usuario'}",
+            status_code=303
+        )
+
+
+@router.get("/whatsapp-users/{user_id}/edit", response_class=HTMLResponse)
+async def edit_whatsapp_user_form(
+    request: Request,
+    user_id: str,
+    username: str = Depends(verify_admin_ui),
+    cloud_client: CloudAPIClient = Depends(get_cloud_client)
+):
+    """Load WhatsApp user for editing"""
+    # Fetch user and all fields in parallel
+    user_result = cloud_client.get_whatsapp_user(user_id)
+    fields_result = cloud_client.get_fields()
+    
+    if not user_result.ok:
+        if user_result.error_type == ErrorType.NOT_FOUND:
+            return RedirectResponse(
+                url="/admin-ui/whatsapp-users?error=Usuario no encontrado",
+                status_code=303
+            )
+        context = {"request": request, "user": None, "available_fields": []}
+        context.update(handle_api_error(user_result.error_type, user_result.detail))
+        return templates.TemplateResponse("edit_whatsapp_user.html", context)
+    
+    user_data = user_result.data
+    all_fields = fields_result.data if fields_result.ok else []
+    
+    context = {
+        "request": request,
+        "user": user_data,
+        "available_fields": all_fields,
+        "assigned_field_ids": user_data.get("field_ids", []) if isinstance(user_data, dict) else []
+    }
+    return templates.TemplateResponse("edit_whatsapp_user.html", context)
+
+
+@router.post("/whatsapp-users/{user_id}/edit")
+async def update_whatsapp_user(
+    request: Request,
+    user_id: str,
+    username: str = Depends(verify_admin_ui),
+    cloud_client: CloudAPIClient = Depends(get_cloud_client),
+    display_name: Optional[str] = Form(None),
+    is_active: Optional[str] = Form(None),
+    field_ids: Optional[str] = Form(None)
+):
+    """Update WhatsApp user via Cloud API"""
+    # Parse field_ids
+    field_ids_list = []
+    if field_ids:
+        try:
+            field_ids_list = [int(fid.strip()) for fid in field_ids.split(",") if fid.strip()]
+        except ValueError:
+            return RedirectResponse(
+                url=f"/admin-ui/whatsapp-users/{user_id}/edit?error=IDs de campos inválidos",
+                status_code=303
+            )
+    
+    data = {
+        "display_name": display_name if display_name else None,
+        "is_active": is_active == "true",
+        "field_ids": field_ids_list
+    }
+    
+    result = cloud_client.update_whatsapp_user(user_id, data)
+    
+    if result.ok:
+        return RedirectResponse(
+            url="/admin-ui/whatsapp-users?success=Usuario actualizado exitosamente",
+            status_code=303
+        )
+    
+    # On error, fetch user again and stay on edit page
+    user_result = cloud_client.get_whatsapp_user(user_id)
+    fields_result = cloud_client.get_fields()
+    user_data = user_result.data if user_result.ok else {}
+    all_fields = fields_result.data if fields_result.ok else []
+    
+    context = {
+        "request": request,
+        "user": {**data, "id": user_id, "phone_number": user_data.get("phone_number", "")},
+        "available_fields": all_fields,
+        "assigned_field_ids": field_ids_list
+    }
+    context.update(handle_api_error(result.error_type, result.detail))
+    return templates.TemplateResponse("edit_whatsapp_user.html", context)
+
+
+@router.post("/whatsapp-users/{user_id}/delete")
+async def delete_whatsapp_user(
+    user_id: str,
+    username: str = Depends(verify_admin_ui),
+    cloud_client: CloudAPIClient = Depends(get_cloud_client)
+):
+    """Soft delete WhatsApp user via Cloud API"""
+    result = cloud_client.delete_whatsapp_user(user_id)
+    
+    if result.ok:
+        return RedirectResponse(
+            url="/admin-ui/whatsapp-users?success=Usuario eliminado exitosamente",
+            status_code=303
+        )
+    
+    if result.error_type == ErrorType.NOT_FOUND:
+        return RedirectResponse(
+            url="/admin-ui/whatsapp-users?error=Usuario no encontrado",
+            status_code=303
+        )
+    
+    return RedirectResponse(
+        url=f"/admin-ui/whatsapp-users?error={result.detail or 'Error al eliminar usuario'}",
+        status_code=303
+    )
+
+
+# =====================================================
 # CLIENTS CRUD - Phase 3.A
 # =====================================================
 

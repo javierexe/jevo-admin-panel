@@ -232,6 +232,22 @@ class CloudAPIClient:
         """
         return self._make_request("GET", "/admin/whatsapp-users")
     
+    def get_whatsapp_user(self, user_id: str) -> APIResult:
+        """Get single WhatsApp user detail for editing"""
+        return self._make_request("GET", f"/admin/whatsapp-users/{user_id}")
+    
+    def create_whatsapp_user(self, data: Dict[str, Any]) -> APIResult:
+        """Create new WhatsApp user (no retry for POST)"""
+        return self._make_request("POST", "/admin/whatsapp-users", retry=False, json=data)
+    
+    def update_whatsapp_user(self, user_id: str, data: Dict[str, Any]) -> APIResult:
+        """Update WhatsApp user (no retry for PUT)"""
+        return self._make_request("PUT", f"/admin/whatsapp-users/{user_id}", retry=False, json=data)
+    
+    def delete_whatsapp_user(self, user_id: str) -> APIResult:
+        """Soft delete WhatsApp user (no retry for DELETE)"""
+        return self._make_request("DELETE", f"/admin/whatsapp-users/{user_id}", retry=False)
+    
     # =====================================================
     # Clients CRUD operations
     # =====================================================
