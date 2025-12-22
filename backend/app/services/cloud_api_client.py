@@ -18,6 +18,7 @@ class ErrorType(str, Enum):
     SERVER_ERROR = "server_error"
     NOT_FOUND = "not_found"
     VALIDATION = "validation"
+    CONFLICT = "conflict"
     UNKNOWN = "unknown"
 
 
@@ -94,12 +95,14 @@ class CloudAPIClient:
                     )
                     
                     # Handle successful responses
-                    if response.status_code == 200:
+                    if response.status_code in (200, 201, 204):
                         try:
+                            if response.status_code == 204 or not response.text:
+                                return APIResult(ok=True, data=None, status=response.status_code)
                             data = response.json()
-                            return APIResult(ok=True, data=data, status=200)
+                            return APIResult(ok=True, data=data, status=response.status_code)
                         except Exception:
-                            return APIResult(ok=True, data=None, status=200)
+                            return APIResult(ok=True, data=None, status=response.status_code)
                     
                     # Handle specific error cases
                     if response.status_code == 401:
@@ -118,12 +121,30 @@ class CloudAPIClient:
                             detail="Resource not found"
                         )
                     
+                    if response.status_code == 409:
+                        try:
+                            error_data = response.json()
+                            detail = error_data.get("detail", "Conflict error")
+                        except:
+                            detail = "Conflict error"
+                        return APIResult(
+                            ok=False,
+                            error_type=ErrorType.CONFLICT,
+                            status=409,
+                            detail=detail
+                        )
+                    
                     if response.status_code == 422:
+                        try:
+                            error_data = response.json()
+                            detail = error_data.get("detail", "Validation error")
+                        except:
+                            detail = "Validation error"
                         return APIResult(
                             ok=False,
                             error_type=ErrorType.VALIDATION,
                             status=422,
-                            detail="Validation error"
+                            detail=detail
                         )
                     
                     if response.status_code >= 500:
@@ -210,6 +231,71 @@ class CloudAPIClient:
             APIResult with list of WhatsApp users or error
         """
         return self._make_request("GET", "/admin/whatsapp-users")
+    
+    # =====================================================
+    # Clients CRUD operations
+    # =====================================================
+    
+    def get_client_detail(self, client_code: str) -> APIResult:
+        """Get single client detail for editing"""
+        return self._make_request("GET", f"/admin/clients/{client_code}")
+    
+    def create_client(self, data: Dict[str, Any]) -> APIResult:
+        """Create new client (no retry for POST)"""
+        return self._make_request("POST", "/admin/clients", retry=False, json=data)
+    
+    def update_client(self, client_code: str, data: Dict[str, Any]) -> APIResult:
+        """Update existing client (no retry for PATCH)"""
+        return self._make_request("PATCH", f"/admin/clients/{client_code}", retry=False, json=data)
+    
+    def delete_client(self, client_code: str) -> APIResult:
+        """Delete client (no retry for DELETE)"""
+        return self._make_request("DELETE", f"/admin/clients/{client_code}", retry=False)
+    
+    # =====================================================
+    # Fields CRUD operations
+    # =====================================================
+    
+    def get_field_detail(self, client_code: str, field_code: str) -> APIResult:
+        """Get single field detail for editing"""
+        return self._make_request("GET", f"/admin/fields/{client_code}/{field_code}")
+    
+    def create_field(self, data: Dict[str, Any]) -> APIResult:
+        """Create new field (no retry for POST)"""
+        return self._make_request("POST", "/admin/fields", retry=False, json=data)
+    
+    def update_field(self, client_code: str, field_code: str, data: Dict[str, Any]) -> APIResult:
+        """Update existing field (no retry for PATCH)"""
+        return self._make_request("PATCH", f"/admin/fields/{client_code}/{field_code}", retry=False, json=data)
+    
+    def delete_field(self, client_code: str, field_code: str) -> APIResult:
+        """Delete field (no retry for DELETE)"""
+        return self._make_request("DELETE", f"/admin/fields/{client_code}/{field_code}", retry=False)
+    
+    def get_field_agent_config(self, client_code: str, field_code: str) -> APIResult:
+        """Download field agent config (.env file) as plain text"""
+        endpoint = f"/admin/fields/{client_code}/{field_code}/agent-config"
+        url = f"{self.base_url}{endpoint}"
+        
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.get(url, headers=self.headers)
+                
+                if response.status_code == 200:
+                    return APIResult(ok=True, data=response.text, status=200)
+                elif response.status_code == 404:
+                    return APIResult(ok=False, error_type=ErrorType.NOT_FOUND, status=404, detail="Config not found")
+                elif response.status_code == 401:
+                    return APIResult(ok=False, error_type=ErrorType.UNAUTHORIZED, status=401, detail="Unauthorized")
+                else:
+                    return APIResult(ok=False, error_type=ErrorType.SERVER_ERROR, status=response.status_code, detail="Failed to download config")
+        
+        except httpx.TimeoutException:
+            return APIResult(ok=False, error_type=ErrorType.TIMEOUT, status=None, detail="Request timeout")
+        except (httpx.NetworkError, httpx.ConnectError):
+            return APIResult(ok=False, error_type=ErrorType.NETWORK, status=None, detail="Network error")
+        except Exception as e:
+            return APIResult(ok=False, error_type=ErrorType.UNKNOWN, status=None, detail=str(e))
 
 
 def get_cloud_api_client(base_url: str, admin_token: str) -> CloudAPIClient:
