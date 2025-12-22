@@ -84,6 +84,9 @@ class CloudAPIClient:
         url = f"{self.base_url}{endpoint}"
         attempts = self.max_retries + 1 if (retry and method == "GET") else 1
         
+        # Log request for debugging
+        print(f"[CloudAPIClient] {method} {url}")
+        
         for attempt in range(attempts):
             try:
                 with httpx.Client(timeout=self.timeout) as client:
@@ -119,6 +122,14 @@ class CloudAPIClient:
                             error_type=ErrorType.NOT_FOUND,
                             status=404,
                             detail="Resource not found"
+                        )
+                    
+                    if response.status_code == 405:
+                        return APIResult(
+                            ok=False,
+                            error_type=ErrorType.VALIDATION,
+                            status=405,
+                            detail=f"Method not allowed: {method} {path}"
                         )
                     
                     if response.status_code == 409:
