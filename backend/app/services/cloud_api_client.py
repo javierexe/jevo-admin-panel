@@ -85,7 +85,7 @@ class CloudAPIClient:
         attempts = self.max_retries + 1 if (retry and method == "GET") else 1
         
         # Log request for debugging
-        print(f"[CloudAPIClient] {method} {url}")
+        print(f"[CloudAPIClient] {method} {url} (attempt {attempt + 1}/{attempts})")
         
         for attempt in range(attempts):
             try:
@@ -101,13 +101,19 @@ class CloudAPIClient:
                     if response.status_code in (200, 201, 204):
                         try:
                             if response.status_code == 204 or not response.text:
+                                print(f"[CloudAPIClient] ✓ {response.status_code} (empty body)")
                                 return APIResult(ok=True, data=None, status=response.status_code)
                             data = response.json()
+                            data_type = type(data).__name__
+                            data_len = len(data) if isinstance(data, (list, dict)) else "N/A"
+                            print(f"[CloudAPIClient] ✓ {response.status_code} (type={data_type}, len={data_len})")
                             return APIResult(ok=True, data=data, status=response.status_code)
                         except Exception:
                             return APIResult(ok=True, data=None, status=response.status_code)
                     
                     # Handle specific error cases
+                    print(f"[CloudAPIClient] ✗ {response.status_code} {response.text[:200]}")
+                    
                     if response.status_code == 401:
                         return APIResult(
                             ok=False,

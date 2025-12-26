@@ -119,10 +119,12 @@ async def list_fields(
     }
     
     if result.ok:
-        # Fields endpoint might return both fields and clients
-        data = result.data or {}
-        context["fields"] = data.get("fields", []) if isinstance(data, dict) else []
-        context["clients"] = data.get("clients", []) if isinstance(data, dict) else []
+        # Fields endpoint returns array directly
+        data = result.data or []
+        context["fields"] = data if isinstance(data, list) else []
+        # Also fetch clients for the create form dropdown
+        clients_result = cloud_client.get_clients()
+        context["clients"] = clients_result.data if (clients_result.ok and isinstance(clients_result.data, list)) else []
     else:
         context["fields"] = []
         context["clients"] = []
@@ -146,10 +148,12 @@ async def list_whatsapp_users(
     }
     
     if result.ok:
-        # WhatsApp users endpoint might return users and fields
-        data = result.data or {}
-        context["users"] = data.get("users", []) if isinstance(data, dict) else []
-        context["fields"] = data.get("fields", []) if isinstance(data, dict) else []
+        # WhatsApp users endpoint returns array directly
+        data = result.data or []
+        context["users"] = data if isinstance(data, list) else []
+        # Also fetch fields for the create form dropdown
+        fields_result = cloud_client.get_fields()
+        context["fields"] = fields_result.data if (fields_result.ok and isinstance(fields_result.data, list)) else []
     else:
         context["users"] = []
         context["fields"] = []
