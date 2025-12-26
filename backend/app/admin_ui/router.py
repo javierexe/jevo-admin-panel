@@ -22,7 +22,7 @@ templates_dir = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(templates_dir))
 
 def convert_utc_to_chile(iso_string: str) -> str:
-    """Convert UTC ISO timestamp to Chile time (America/Santiago) in DD/MM HH:MM format"""
+    """Convert UTC ISO timestamp to Chile time (America/Santiago) in DD/MM/YYYY HH:MM format"""
     if not iso_string:
         return "—"
     try:
@@ -31,8 +31,8 @@ def convert_utc_to_chile(iso_string: str) -> str:
         # Convert to Chile timezone
         chile_tz = pytz.timezone('America/Santiago')
         dt_chile = dt.astimezone(chile_tz)
-        # Format as DD/MM HH:MM
-        return dt_chile.strftime('%d/%m %H:%M')
+        # Format as DD/MM/YYYY HH:MM
+        return dt_chile.strftime('%d/%m/%Y %H:%M')
     except:
         return "—"
 security = HTTPBasic()
