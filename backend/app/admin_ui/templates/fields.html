@@ -62,8 +62,8 @@
                                 —
                             </span>
                             {% endif %}
-                            {% if field.last_sync_at %}
-                            <p class="text-xs text-slate-500 mt-1">{{ field.last_sync_at[:16].replace('T', ' ') if field.last_sync_at is string else field.last_sync_at.strftime('%d/%m %H:%M') }}</p>
+                            {% if field.last_sync_at_formatted %}
+                            <p class="text-xs text-slate-500 mt-1">{{ field.last_sync_at_formatted }}</p>
                             {% endif %}
                         </td>
                         <td class="px-4 py-3">

@@ -11,6 +11,8 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pathlib import Path
 import secrets
 from typing import Optional
+from datetime import datetime
+import pytz
 
 from app.core.config import settings
 from app.services.cloud_api_client import CloudAPIClient, ErrorType
@@ -18,6 +20,21 @@ from app.services.cloud_api_client import CloudAPIClient, ErrorType
 router = APIRouter(prefix="/admin-ui", tags=["admin-ui"])
 templates_dir = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(templates_dir))
+
+def convert_utc_to_chile(iso_string: str) -> str:
+    """Convert UTC ISO timestamp to Chile time (America/Santiago) in DD/MM HH:MM format"""
+    if not iso_string:
+        return "—"
+    try:
+        # Parse ISO timestamp
+        dt = datetime.fromisoformat(iso_string.replace('Z', '+00:00'))
+        # Convert to Chile timezone
+        chile_tz = pytz.timezone('America/Santiago')
+        dt_chile = dt.astimezone(chile_tz)
+        # Format as DD/MM HH:MM
+        return dt_chile.strftime('%d/%m %H:%M')
+    except:
+        return "—"
 security = HTTPBasic()
 
 
@@ -131,10 +148,18 @@ async def list_fields(
             # Fields endpoint returns a list directly
             data = result.data or []
             if isinstance(data, list):
+                # Convert UTC timestamps to Chile time
+                for field in data:
+                    if isinstance(field, dict) and 'last_sync_at' in field:
+                        field['last_sync_at_formatted'] = convert_utc_to_chile(field['last_sync_at'])
                 context["fields"] = data
                 context["clients"] = []  # Clients need to be fetched separately if needed
             elif isinstance(data, dict):
-                context["fields"] = data.get("fields", [])
+                fields = data.get("fields", [])
+                for field in fields:
+                    if isinstance(field, dict) and 'last_sync_at' in field:
+                        field['last_sync_at_formatted'] = convert_utc_to_chile(field['last_sync_at'])
+                context["fields"] = fields
                 context["clients"] = data.get("clients", [])
             else:
                 context["fields"] = []
