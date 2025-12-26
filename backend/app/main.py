@@ -56,6 +56,18 @@ async def health_check():
     return {"status": "healthy"}
 
 
+@app.get("/__build")
+async def build_info():
+    """Build information for debugging"""
+    import os
+    return {
+        "service": "jevo-admin-panel",
+        "commit": os.getenv("RAILWAY_GIT_COMMIT_SHA", "unknown"),
+        "branch": os.getenv("RAILWAY_GIT_BRANCH", "unknown"),
+        "env": os.getenv("RAILWAY_ENVIRONMENT_NAME", "unknown")
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
