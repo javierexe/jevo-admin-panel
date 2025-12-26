@@ -128,10 +128,17 @@ async def list_fields(
         }
         
         if result.ok:
-            # Fields endpoint might return both fields and clients
-            data = result.data or {}
-            context["fields"] = data.get("fields", []) if isinstance(data, dict) else []
-            context["clients"] = data.get("clients", []) if isinstance(data, dict) else []
+            # Fields endpoint returns a list directly
+            data = result.data or []
+            if isinstance(data, list):
+                context["fields"] = data
+                context["clients"] = []  # Clients need to be fetched separately if needed
+            elif isinstance(data, dict):
+                context["fields"] = data.get("fields", [])
+                context["clients"] = data.get("clients", [])
+            else:
+                context["fields"] = []
+                context["clients"] = []
             print(f"[list_fields] Rendering: {len(context['fields'])} fields, {len(context['clients'])} clients")
         else:
             context["fields"] = []
@@ -164,10 +171,17 @@ async def list_whatsapp_users(
         }
         
         if result.ok:
-            # WhatsApp users endpoint might return users and fields
-            data = result.data or {}
-            context["users"] = data.get("users", []) if isinstance(data, dict) else []
-            context["fields"] = data.get("fields", []) if isinstance(data, dict) else []
+            # WhatsApp users endpoint returns a list directly
+            data = result.data or []
+            if isinstance(data, list):
+                context["users"] = data
+                context["fields"] = []  # Fields need to be fetched separately if needed
+            elif isinstance(data, dict):
+                context["users"] = data.get("users", [])
+                context["fields"] = data.get("fields", [])
+            else:
+                context["users"] = []
+                context["fields"] = []
             print(f"[list_whatsapp_users] Rendering: {len(context['users'])} users, {len(context['fields'])} fields")
         else:
             context["users"] = []
