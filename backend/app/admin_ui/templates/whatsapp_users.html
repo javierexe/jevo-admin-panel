@@ -40,11 +40,11 @@
                             <span class="text-sm text-slate-900">{{ user.display_name }}</span>
                         </td>
                         <td class="px-4 py-3">
-                            <span class="text-sm text-slate-600">{{ user.assigned_fields_display }}</span>
+                            <span class="text-sm text-slate-600">{{ user.assigned_fields_display | default('—') }}</span>
                         </td>
                         <td class="px-4 py-3 text-center">
                             <span class="inline-flex items-center justify-center rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-medium text-slate-700">
-                                {{ user.fields_count }}
+                                {{ user.fields_count | default(0) }}
                             </span>
                         </td>
                         <td class="px-4 py-3 text-center">
@@ -59,7 +59,7 @@
                             {% endif %}
                         </td>
                         <td class="px-4 py-3 text-center">
-                            <span class="text-sm text-slate-600">{{ user.created_at.strftime('%d-%m-%Y') if user.created_at else '-' }}</span>
+                            <span class="text-sm text-slate-600">{{ (user.created_at.strftime('%d-%m-%Y') if user.created_at and not (user.created_at is string) else (user.created_at if user.created_at else '—')) }}</span>
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex items-center justify-center gap-1">

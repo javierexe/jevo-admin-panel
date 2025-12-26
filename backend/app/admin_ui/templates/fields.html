@@ -32,7 +32,7 @@
                     {% for field in fields %}
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="px-4 py-3">
-                            <span class="text-sm text-slate-900">{{ field.client_name }}</span>
+                            <span class="text-sm text-slate-900">{{ field.client_name | default(field.client_code | default('—')) }}</span>
                         </td>
                         <td class="px-4 py-3">
                             <span class="font-mono text-sm font-medium text-slate-900">{{ field.field_code }}</span>
@@ -44,21 +44,25 @@
                             {% endif %}
                         </td>
                         <td class="px-4 py-3 text-center">
-                            {% if field.sync_status == 'online' %}
+                            {% if field.sync_status is defined and field.sync_status == 'online' %}
                             <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
                                 ● Online
                             </span>
-                            {% elif field.sync_status == 'never_synced' %}
+                            {% elif field.sync_status is defined and field.sync_status == 'never_synced' %}
                             <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
                                 ○ Nunca
                             </span>
-                            {% else %}
+                            {% elif field.sync_status is defined %}
                             <span class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-700">
                                 ⚠ {{ field.sync_status }}
                             </span>
+                            {% else %}
+                            <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                                —
+                            </span>
                             {% endif %}
                             {% if field.last_sync_at %}
-                            <p class="text-xs text-slate-500 mt-1">{{ field.last_sync_at.strftime('%d/%m %H:%M') }}</p>
+                            <p class="text-xs text-slate-500 mt-1">{{ field.last_sync_at if field.last_sync_at is string else field.last_sync_at.strftime('%d/%m %H:%M') }}</p>
                             {% endif %}
                         </td>
                         <td class="px-4 py-3">
