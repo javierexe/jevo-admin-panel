@@ -198,11 +198,21 @@ async def list_whatsapp_users(
         if result.ok:
             # WhatsApp users endpoint returns a list directly
             data = result.data or []
+            users = []
             if isinstance(data, list):
-                context["users"] = data
+                # Convert created_at to Chile time
+                for user in data:
+                    if isinstance(user, dict) and 'created_at' in user:
+                        user['created_at_formatted'] = convert_utc_to_chile(user['created_at'])
+                    users.append(user)
+                context["users"] = users
                 context["fields"] = []  # Fields need to be fetched separately if needed
             elif isinstance(data, dict):
-                context["users"] = data.get("users", [])
+                users_list = data.get("users", [])
+                for user in users_list:
+                    if isinstance(user, dict) and 'created_at' in user:
+                        user['created_at_formatted'] = convert_utc_to_chile(user['created_at'])
+                context["users"] = users_list
                 context["fields"] = data.get("fields", [])
             else:
                 context["users"] = []
