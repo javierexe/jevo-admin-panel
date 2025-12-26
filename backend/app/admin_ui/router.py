@@ -344,15 +344,9 @@ async def update_whatsapp_user(
     form_data = await request.form()
     field_ids_list = []
     if 'field_ids' in form_data:
-        try:
-            # Get all values with name 'field_ids'
-            field_ids_values = form_data.getlist('field_ids')
-            field_ids_list = [int(fid) for fid in field_ids_values if fid]
-        except (ValueError, TypeError):
-            return RedirectResponse(
-                url=f"/admin-ui/whatsapp-users/{user_id}/edit?error=IDs de campos inválidos",
-                status_code=303
-            )
+        # Get all values with name 'field_ids' (they are UUID strings, not ints)
+        field_ids_values = form_data.getlist('field_ids')
+        field_ids_list = [str(fid).strip() for fid in field_ids_values if fid]
     
     data = {
         "display_name": display_name if display_name else None,
