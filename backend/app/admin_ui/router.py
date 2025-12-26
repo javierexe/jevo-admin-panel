@@ -304,8 +304,12 @@ async def edit_whatsapp_user_form(
     user_data = user_result.data
     all_fields = fields_result.data if fields_result.ok else []
     
-    # Get assigned field IDs
-    assigned_field_ids = user_data.get("field_ids", []) if isinstance(user_data, dict) else []
+    # Get assigned field IDs - API returns 'assigned_field_ids' not 'field_ids'
+    assigned_field_ids = []
+    if isinstance(user_data, dict):
+        assigned_field_ids = user_data.get("assigned_field_ids", user_data.get("field_ids", []))
+    
+    print(f"[edit_whatsapp_user] user_data type: {type(user_data)}, assigned_field_ids: {assigned_field_ids}")
     
     # Process fields to add display name and is_assigned flag
     processed_fields = []
@@ -320,6 +324,8 @@ async def edit_whatsapp_user_form(
                 field_copy["display"] = f"{field_code} - {name} ({client_code})" if client_code else f"{field_code} - {name}"
                 field_copy["is_assigned"] = field.get("id") in assigned_field_ids
                 processed_fields.append(field_copy)
+    
+    print(f"[edit_whatsapp_user] Processed {len(processed_fields)} fields, {sum(1 for f in processed_fields if f.get('is_assigned'))} assigned")
     
     context = {
         "request": request,
