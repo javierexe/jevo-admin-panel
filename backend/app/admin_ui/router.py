@@ -337,16 +337,18 @@ async def update_whatsapp_user(
     username: str = Depends(verify_admin_ui),
     cloud_client: CloudAPIClient = Depends(get_cloud_client),
     display_name: Optional[str] = Form(None),
-    is_active: Optional[str] = Form(None),
-    field_ids: Optional[str] = Form(None)
+    is_active: Optional[str] = Form(None)
 ):
     """Update WhatsApp user via Cloud API"""
-    # Parse field_ids
+    # Parse field_ids from form data (multiple values with same name)
+    form_data = await request.form()
     field_ids_list = []
-    if field_ids:
+    if 'field_ids' in form_data:
         try:
-            field_ids_list = [int(fid.strip()) for fid in field_ids.split(",") if fid.strip()]
-        except ValueError:
+            # Get all values with name 'field_ids'
+            field_ids_values = form_data.getlist('field_ids')
+            field_ids_list = [int(fid) for fid in field_ids_values if fid]
+        except (ValueError, TypeError):
             return RedirectResponse(
                 url=f"/admin-ui/whatsapp-users/{user_id}/edit?error=IDs de campos inválidos",
                 status_code=303
