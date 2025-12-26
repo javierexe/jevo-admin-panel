@@ -187,8 +187,18 @@ async def list_whatsapp_users(
 ):
     """List all WhatsApp users from Cloud API"""
     try:
+        # Fetch users and fields in parallel
         result = cloud_client.get_whatsapp_users()
+        fields_result = cloud_client.get_fields()
+        
         print(f"[list_whatsapp_users] API result: ok={result.ok}, data_type={type(result.data)}, data={result.data}")
+        
+        # Build field lookup map by ID
+        fields_map = {}
+        if fields_result.ok and isinstance(fields_result.data, list):
+            for field in fields_result.data:
+                if isinstance(field, dict) and 'id' in field:
+                    fields_map[field['id']] = field
         
         context = {
             "request": request,
@@ -200,18 +210,42 @@ async def list_whatsapp_users(
             data = result.data or []
             users = []
             if isinstance(data, list):
-                # Convert created_at to Chile time
+                # Process each user: add created_at format and field info
                 for user in data:
-                    if isinstance(user, dict) and 'created_at' in user:
-                        user['created_at_formatted'] = convert_utc_to_chile(user['created_at'])
+                    if isinstance(user, dict):
+                        # Format created_at
+                        if 'created_at' in user:
+                            user['created_at_formatted'] = convert_utc_to_chile(user['created_at'])
+                        
+                        # Get assigned field codes
+                        assigned_field_ids = user.get('assigned_field_ids', [])
+                        field_codes = []
+                        for field_id in assigned_field_ids:
+                            if field_id in fields_map:
+                                field_codes.append(fields_map[field_id].get('field_code', '?'))
+                        
+                        user['fields_count'] = len(field_codes)
+                        user['assigned_fields_display'] = ', '.join(field_codes) if field_codes else '—'
+                    
                     users.append(user)
                 context["users"] = users
-                context["fields"] = []  # Fields need to be fetched separately if needed
+                context["fields"] = []
             elif isinstance(data, dict):
                 users_list = data.get("users", [])
                 for user in users_list:
-                    if isinstance(user, dict) and 'created_at' in user:
-                        user['created_at_formatted'] = convert_utc_to_chile(user['created_at'])
+                    if isinstance(user, dict):
+                        if 'created_at' in user:
+                            user['created_at_formatted'] = convert_utc_to_chile(user['created_at'])
+                        
+                        assigned_field_ids = user.get('assigned_field_ids', [])
+                        field_codes = []
+                        for field_id in assigned_field_ids:
+                            if field_id in fields_map:
+                                field_codes.append(fields_map[field_id].get('field_code', '?'))
+                        
+                        user['fields_count'] = len(field_codes)
+                        user['assigned_fields_display'] = ', '.join(field_codes) if field_codes else '—'
+                
                 context["users"] = users_list
                 context["fields"] = data.get("fields", [])
             else:
