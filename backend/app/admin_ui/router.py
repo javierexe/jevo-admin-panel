@@ -304,11 +304,28 @@ async def edit_whatsapp_user_form(
     user_data = user_result.data
     all_fields = fields_result.data if fields_result.ok else []
     
+    # Get assigned field IDs
+    assigned_field_ids = user_data.get("field_ids", []) if isinstance(user_data, dict) else []
+    
+    # Process fields to add display name and is_assigned flag
+    processed_fields = []
+    if isinstance(all_fields, list):
+        for field in all_fields:
+            if isinstance(field, dict):
+                field_copy = field.copy()
+                # Create display name: "FIELD_CODE - Name (CLIENT_CODE)"
+                field_code = field.get("field_code", "?")
+                name = field.get("name", "Campo sin nombre")
+                client_code = field.get("client_code", "")
+                field_copy["display"] = f"{field_code} - {name} ({client_code})" if client_code else f"{field_code} - {name}"
+                field_copy["is_assigned"] = field.get("id") in assigned_field_ids
+                processed_fields.append(field_copy)
+    
     context = {
         "request": request,
         "user": user_data,
-        "available_fields": all_fields,
-        "assigned_field_ids": user_data.get("field_ids", []) if isinstance(user_data, dict) else []
+        "available_fields": processed_fields,
+        "assigned_field_ids": assigned_field_ids
     }
     return templates.TemplateResponse("edit_whatsapp_user.html", context)
 
