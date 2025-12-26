@@ -118,24 +118,33 @@ async def list_fields(
     cloud_client: CloudAPIClient = Depends(get_cloud_client)
 ):
     """List all fields from Cloud API"""
-    result = cloud_client.get_fields()
-    
-    context = {
-        "request": request,
-        "open_create_panel": False
-    }
-    
-    if result.ok:
-        # Fields endpoint might return both fields and clients
-        data = result.data or {}
-        context["fields"] = data.get("fields", []) if isinstance(data, dict) else []
-        context["clients"] = data.get("clients", []) if isinstance(data, dict) else []
-    else:
-        context["fields"] = []
-        context["clients"] = []
-        context.update(handle_api_error(result.error_type, result.detail))
-    
-    return templates.TemplateResponse("fields.html", context)
+    try:
+        result = cloud_client.get_fields()
+        print(f"[list_fields] API result: ok={result.ok}, data_type={type(result.data)}, data={result.data}")
+        
+        context = {
+            "request": request,
+            "open_create_panel": False
+        }
+        
+        if result.ok:
+            # Fields endpoint might return both fields and clients
+            data = result.data or {}
+            context["fields"] = data.get("fields", []) if isinstance(data, dict) else []
+            context["clients"] = data.get("clients", []) if isinstance(data, dict) else []
+            print(f"[list_fields] Rendering: {len(context['fields'])} fields, {len(context['clients'])} clients")
+        else:
+            context["fields"] = []
+            context["clients"] = []
+            context.update(handle_api_error(result.error_type, result.detail))
+            print(f"[list_fields] API Error: {result.error_type} - {result.detail}")
+        
+        return templates.TemplateResponse("fields.html", context)
+    except Exception as e:
+        print(f"[list_fields] ERROR: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 @router.get("/whatsapp-users", response_class=HTMLResponse)
@@ -145,24 +154,33 @@ async def list_whatsapp_users(
     cloud_client: CloudAPIClient = Depends(get_cloud_client)
 ):
     """List all WhatsApp users from Cloud API"""
-    result = cloud_client.get_whatsapp_users()
-    
-    context = {
-        "request": request,
-        "open_create_panel": False
-    }
-    
-    if result.ok:
-        # WhatsApp users endpoint might return users and fields
-        data = result.data or {}
-        context["users"] = data.get("users", []) if isinstance(data, dict) else []
-        context["fields"] = data.get("fields", []) if isinstance(data, dict) else []
-    else:
-        context["users"] = []
-        context["fields"] = []
-        context.update(handle_api_error(result.error_type, result.detail))
-    
-    return templates.TemplateResponse("whatsapp_users.html", context)
+    try:
+        result = cloud_client.get_whatsapp_users()
+        print(f"[list_whatsapp_users] API result: ok={result.ok}, data_type={type(result.data)}, data={result.data}")
+        
+        context = {
+            "request": request,
+            "open_create_panel": False
+        }
+        
+        if result.ok:
+            # WhatsApp users endpoint might return users and fields
+            data = result.data or {}
+            context["users"] = data.get("users", []) if isinstance(data, dict) else []
+            context["fields"] = data.get("fields", []) if isinstance(data, dict) else []
+            print(f"[list_whatsapp_users] Rendering: {len(context['users'])} users, {len(context['fields'])} fields")
+        else:
+            context["users"] = []
+            context["fields"] = []
+            context.update(handle_api_error(result.error_type, result.detail))
+            print(f"[list_whatsapp_users] API Error: {result.error_type} - {result.detail}")
+        
+        return templates.TemplateResponse("whatsapp_users.html", context)
+    except Exception as e:
+        print(f"[list_whatsapp_users] ERROR: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 # =====================================================
