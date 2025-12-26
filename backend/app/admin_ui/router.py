@@ -88,20 +88,27 @@ async def list_clients(
     cloud_client: CloudAPIClient = Depends(get_cloud_client)
 ):
     """List all clients from Cloud API"""
-    result = cloud_client.get_clients()
-    
-    context = {
-        "request": request,
-        "open_create_panel": False
-    }
-    
-    if result.ok:
-        context["clients"] = result.data or []
-    else:
-        context["clients"] = []
-        context.update(handle_api_error(result.error_type, result.detail))
-    
-    return templates.TemplateResponse("clients.html", context)
+    try:
+        result = cloud_client.get_clients()
+        print(f"[list_clients] API result: ok={result.ok}, data_type={type(result.data)}, data={result.data}")
+        
+        context = {
+            "request": request,
+            "open_create_panel": False
+        }
+        
+        if result.ok:
+            context["clients"] = result.data or []
+        else:
+            context["clients"] = []
+            context.update(handle_api_error(result.error_type, result.detail))
+        
+        return templates.TemplateResponse("clients.html", context)
+    except Exception as e:
+        print(f"[list_clients] ERROR: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 @router.get("/fields", response_class=HTMLResponse)
@@ -119,12 +126,10 @@ async def list_fields(
     }
     
     if result.ok:
-        # Fields endpoint returns array directly
-        data = result.data or []
-        context["fields"] = data if isinstance(data, list) else []
-        # Also fetch clients for the create form dropdown
-        clients_result = cloud_client.get_clients()
-        context["clients"] = clients_result.data if (clients_result.ok and isinstance(clients_result.data, list)) else []
+        # Fields endpoint might return both fields and clients
+        data = result.data or {}
+        context["fields"] = data.get("fields", []) if isinstance(data, dict) else []
+        context["clients"] = data.get("clients", []) if isinstance(data, dict) else []
     else:
         context["fields"] = []
         context["clients"] = []
@@ -148,12 +153,10 @@ async def list_whatsapp_users(
     }
     
     if result.ok:
-        # WhatsApp users endpoint returns array directly
-        data = result.data or []
-        context["users"] = data if isinstance(data, list) else []
-        # Also fetch fields for the create form dropdown
-        fields_result = cloud_client.get_fields()
-        context["fields"] = fields_result.data if (fields_result.ok and isinstance(fields_result.data, list)) else []
+        # WhatsApp users endpoint might return users and fields
+        data = result.data or {}
+        context["users"] = data.get("users", []) if isinstance(data, dict) else []
+        context["fields"] = data.get("fields", []) if isinstance(data, dict) else []
     else:
         context["users"] = []
         context["fields"] = []
