@@ -626,16 +626,32 @@ async def create_field(
     client_code: str = Form(...),
     field_code: str = Form(...),
     name: str = Form(...),
-    location: Optional[str] = Form(None),
+    icc_db_host: str = Form(...),
+    icc_db_password: str = Form(...),
+    icc_db_port: int = Form(5432),
+    icc_db_name: str = Form("iccpro"),
+    icc_db_user: str = Form("postgres"),
+    location_lat: Optional[float] = Form(None),
+    location_lng: Optional[float] = Form(None),
     size_ha: Optional[float] = Form(None),
     timezone: str = Form("America/Santiago")
 ):
     """Create new field via Cloud API"""
+    # Build location string if lat/lng provided
+    location = None
+    if location_lat is not None and location_lng is not None:
+        location = f"{location_lat},{location_lng}"
+    
     data = {
         "client_code": client_code,
         "field_code": field_code,
         "name": name,
-        "location": location if location else None,
+        "icc_db_host": icc_db_host,
+        "icc_db_port": icc_db_port,
+        "icc_db_name": icc_db_name,
+        "icc_db_user": icc_db_user,
+        "icc_db_password": icc_db_password,
+        "location": location,
         "size_ha": size_ha,
         "timezone": timezone
     }
