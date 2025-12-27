@@ -153,23 +153,34 @@ async def list_fields(
                     if isinstance(field, dict) and 'last_sync_at' in field:
                         field['last_sync_at_formatted'] = convert_utc_to_chile(field['last_sync_at'])
                 context["fields"] = data
-                context["clients"] = []  # Clients need to be fetched separately if needed
             elif isinstance(data, dict):
                 fields = data.get("fields", [])
                 for field in fields:
                     if isinstance(field, dict) and 'last_sync_at' in field:
                         field['last_sync_at_formatted'] = convert_utc_to_chile(field['last_sync_at'])
                 context["fields"] = fields
-                context["clients"] = data.get("clients", [])
             else:
                 context["fields"] = []
-                context["clients"] = []
-            print(f"[list_fields] Rendering: {len(context['fields'])} fields, {len(context['clients'])} clients")
         else:
             context["fields"] = []
-            context["clients"] = []
             context.update(handle_api_error(result.error_type, result.detail))
             print(f"[list_fields] API Error: {result.error_type} - {result.detail}")
+        
+        # Fetch clients separately for the create form
+        clients_result = cloud_client.get_clients()
+        if clients_result.ok:
+            clients_data = clients_result.data or []
+            if isinstance(clients_data, list):
+                context["clients"] = clients_data
+            elif isinstance(clients_data, dict):
+                context["clients"] = clients_data.get("clients", [])
+            else:
+                context["clients"] = []
+        else:
+            context["clients"] = []
+            print(f"[list_fields] Clients API Error: {clients_result.error_type} - {clients_result.detail}")
+        
+        print(f"[list_fields] Rendering: {len(context['fields'])} fields, {len(context['clients'])} clients")
         
         return templates.TemplateResponse("fields.html", context)
     except Exception as e:
@@ -647,12 +658,27 @@ async def create_field(
     }
     context.update(handle_api_error(result.error_type, result.detail))
     
-    # Fetch current lists
+    # Fetch current fields list
     list_result = cloud_client.get_fields()
     if list_result.ok:
         data_response = list_result.data or {}
-        context["fields"] = data_response.get("fields", []) if isinstance(data_response, dict) else []
-        context["clients"] = data_response.get("clients", []) if isinstance(data_response, dict) else []
+        if isinstance(data_response, list):
+            context["fields"] = data_response
+        elif isinstance(data_response, dict):
+            context["fields"] = data_response.get("fields", [])
+        else:
+            context["fields"] = []
+    
+    # Fetch clients separately
+    clients_result = cloud_client.get_clients()
+    if clients_result.ok:
+        clients_data = clients_result.data or []
+        if isinstance(clients_data, list):
+            context["clients"] = clients_data
+        elif isinstance(clients_data, dict):
+            context["clients"] = clients_data.get("clients", [])
+        else:
+            context["clients"] = []
     
     return templates.TemplateResponse("fields.html", context)
 
