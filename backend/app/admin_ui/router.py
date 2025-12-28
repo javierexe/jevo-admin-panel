@@ -749,6 +749,18 @@ async def edit_field_form(
     if not isinstance(field_data, dict):
         field_data = {}
     
+    # Ensure client structure exists (might come as client_code/client_name or nested)
+    if "client" not in field_data or not isinstance(field_data.get("client"), dict):
+        # Build client object from flat fields if needed
+        field_data["client"] = {
+            "code": field_data.get("client_code", client_code),
+            "name": field_data.get("client_name", "")
+        }
+    
+    # Ensure field has code attribute
+    if "code" not in field_data:
+        field_data["code"] = field_code
+    
     # Extract or provide defaults for nested objects
     icc_credentials = field_data.get("icc_credentials", {})
     if not isinstance(icc_credentials, dict):
