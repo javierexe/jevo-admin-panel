@@ -855,6 +855,17 @@ async def update_field(
     if icc_db_password:
         data["icc_db_password"] = icc_db_password
     
+    # Add nomenclature_config if any field is provided
+    if field_aliases or units_mapping or groups_mapping:
+        nomenclature_config = {}
+        if field_aliases:
+            nomenclature_config["aliases"] = field_aliases
+        if units_mapping:
+            nomenclature_config["units_text"] = units_mapping
+        if groups_mapping:
+            nomenclature_config["groups_text"] = groups_mapping
+        data["nomenclature_config"] = nomenclature_config
+    
     result = cloud_client.update_field(client_code, field_code, data)
     
     if result.ok:
