@@ -816,9 +816,9 @@ async def update_field(
     icc_db_name: Optional[str] = Form(None),
     icc_db_user: Optional[str] = Form(None),
     icc_db_password: Optional[str] = Form(None),
-    # Location
-    location_lat: Optional[float] = Form(None),
-    location_lng: Optional[float] = Form(None),
+    # Location (as strings to handle empty values)
+    location_lat: Optional[str] = Form(None),
+    location_lng: Optional[str] = Form(None),
     # Nomenclature
     field_aliases: Optional[str] = Form(None),
     units_mapping: Optional[str] = Form(None),
@@ -831,10 +831,16 @@ async def update_field(
         "active": active == "true" if active else False
     }
     
-    # Add location if provided
-    if location_lat is not None and location_lng is not None:
-        data["location_lat"] = location_lat
-        data["location_lng"] = location_lng
+    # Add location if provided (convert empty strings to None)
+    try:
+        lat = float(location_lat) if location_lat and location_lat.strip() else None
+        lng = float(location_lng) if location_lng and location_lng.strip() else None
+        if lat is not None and lng is not None:
+            data["location_lat"] = lat
+            data["location_lng"] = lng
+    except (ValueError, AttributeError):
+        # Invalid number format, skip location
+        pass
     
     # Add ICC credentials if provided
     icc_credentials = {}
