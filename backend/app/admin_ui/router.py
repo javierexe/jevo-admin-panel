@@ -96,14 +96,17 @@ def normalize_field_data(field_data: dict, client_code: str, field_code: str) ->
         "user": field_data.get("icc_db_user", "")
     }
     
-    nomenclature = field_data.get("nomenclature", {})
-    if not isinstance(nomenclature, dict):
-        nomenclature = {}
+    # Extract nomenclature from nomenclature_config (JSON field from Cloud API)
+    nomenclature_config = field_data.get("nomenclature_config", {})
+    if not isinstance(nomenclature_config, dict):
+        nomenclature_config = {}
     
     # Ensure all required nomenclature fields have defaults
-    nomenclature.setdefault("aliases", "")
-    nomenclature.setdefault("units_text", "")
-    nomenclature.setdefault("groups_text", "")
+    nomenclature = {
+        "aliases": nomenclature_config.get("aliases", ""),
+        "units_text": nomenclature_config.get("units_text", ""),
+        "groups_text": nomenclature_config.get("groups_text", "")
+    }
     
     return field_data, icc_credentials, nomenclature
 
@@ -840,33 +843,17 @@ async def update_field(
         # Invalid number format, skip location
         pass
     
-    # Add ICC credentials if provided
-    icc_credentials = {}
+    # Add ICC credentials if provided (send as flat fields)
     if icc_db_host:
-        icc_credentials["host"] = icc_db_host
+        data["icc_db_host"] = icc_db_host
     if icc_db_port:
-        icc_credentials["port"] = icc_db_port
+        data["icc_db_port"] = icc_db_port
     if icc_db_name:
-        icc_credentials["dbname"] = icc_db_name
+        data["icc_db_name"] = icc_db_name
     if icc_db_user:
-        icc_credentials["user"] = icc_db_user
+        data["icc_db_user"] = icc_db_user
     if icc_db_password:
-        icc_credentials["password"] = icc_db_password
-    
-    if icc_credentials:
-        data["icc_credentials"] = icc_credentials
-    
-    # Add nomenclature if provided
-    nomenclature = {}
-    if field_aliases:
-        nomenclature["aliases"] = field_aliases
-    if units_mapping:
-        nomenclature["units_text"] = units_mapping
-    if groups_mapping:
-        nomenclature["groups_text"] = groups_mapping
-    
-    if nomenclature:
-        data["nomenclature"] = nomenclature
+        data["icc_db_password"] = icc_db_password
     
     result = cloud_client.update_field(client_code, field_code, data)
     
