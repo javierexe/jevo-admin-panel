@@ -272,8 +272,8 @@ class CloudAPIClient:
         return self._make_request("POST", "/admin/clients", retry=False, json=data)
     
     def update_client(self, client_code: str, data: Dict[str, Any]) -> APIResult:
-        """Update existing client (no retry for PATCH)"""
-        return self._make_request("PATCH", f"/admin/clients/{client_code}", retry=False, json=data)
+        """Update existing client (no retry for PUT)"""
+        return self._make_request("PUT", f"/admin/clients/{client_code}", retry=False, json=data)
     
     def delete_client(self, client_code: str) -> APIResult:
         """Delete client (no retry for DELETE)"""
@@ -292,8 +292,8 @@ class CloudAPIClient:
         return self._make_request("POST", "/admin/fields", retry=False, json=data)
     
     def update_field(self, client_code: str, field_code: str, data: Dict[str, Any]) -> APIResult:
-        """Update existing field (no retry for PATCH)"""
-        return self._make_request("PATCH", f"/admin/fields/{client_code}/{field_code}", retry=False, json=data)
+        """Update existing field (no retry for PUT)"""
+        return self._make_request("PUT", f"/admin/fields/{client_code}/{field_code}", retry=False, json=data)
     
     def delete_field(self, client_code: str, field_code: str) -> APIResult:
         """Delete field (no retry for DELETE)"""
