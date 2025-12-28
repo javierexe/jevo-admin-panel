@@ -66,6 +66,50 @@ def get_cloud_client() -> CloudAPIClient:
     )
 
 
+def normalize_field_data(field_data: dict, client_code: str, field_code: str) -> tuple[dict, dict, dict]:
+    """
+    Normalize field data structure to ensure all required nested objects exist.
+    Returns: (field_data, icc_credentials, nomenclature)
+    """
+    # Ensure field_data is a dict
+    if not isinstance(field_data, dict):
+        field_data = {}
+    
+    # Ensure client structure exists (might come as client_code/client_name or nested)
+    if "client" not in field_data or not isinstance(field_data.get("client"), dict):
+        # Build client object from flat fields if needed
+        field_data["client"] = {
+            "code": field_data.get("client_code", client_code),
+            "name": field_data.get("client_name", "")
+        }
+    
+    # Ensure field has code attribute
+    if "code" not in field_data:
+        field_data["code"] = field_code
+    
+    # Extract or provide defaults for nested objects
+    icc_credentials = field_data.get("icc_credentials", {})
+    if not isinstance(icc_credentials, dict):
+        icc_credentials = {}
+    
+    # Ensure all required ICC credential fields have defaults
+    icc_credentials.setdefault("host", "")
+    icc_credentials.setdefault("port", 5432)
+    icc_credentials.setdefault("dbname", "")
+    icc_credentials.setdefault("user", "")
+    
+    nomenclature = field_data.get("nomenclature", {})
+    if not isinstance(nomenclature, dict):
+        nomenclature = {}
+    
+    # Ensure all required nomenclature fields have defaults
+    nomenclature.setdefault("aliases", "")
+    nomenclature.setdefault("units_text", "")
+    nomenclature.setdefault("groups_text", "")
+    
+    return field_data, icc_credentials, nomenclature
+
+
 def handle_api_error(error_type: ErrorType, detail: str) -> dict:
     """
     Convert API errors into template context with message banner.
@@ -743,43 +787,9 @@ async def edit_field_form(
         context.update(handle_api_error(result.error_type, result.detail))
         return templates.TemplateResponse("edit_field.html", context)
     
-    field_data = result.data
-    
-    # Ensure field_data has the required structure
-    if not isinstance(field_data, dict):
-        field_data = {}
-    
-    # Ensure client structure exists (might come as client_code/client_name or nested)
-    if "client" not in field_data or not isinstance(field_data.get("client"), dict):
-        # Build client object from flat fields if needed
-        field_data["client"] = {
-            "code": field_data.get("client_code", client_code),
-            "name": field_data.get("client_name", "")
-        }
-    
-    # Ensure field has code attribute
-    if "code" not in field_data:
-        field_data["code"] = field_code
-    
-    # Extract or provide defaults for nested objects
-    icc_credentials = field_data.get("icc_credentials", {})
-    if not isinstance(icc_credentials, dict):
-        icc_credentials = {}
-    
-    # Ensure all required ICC credential fields have defaults
-    icc_credentials.setdefault("host", "")
-    icc_credentials.setdefault("port", 5432)
-    icc_credentials.setdefault("dbname", "")
-    icc_credentials.setdefault("user", "")
-    
-    nomenclature = field_data.get("nomenclature", {})
-    if not isinstance(nomenclature, dict):
-        nomenclature = {}
-    
-    # Ensure all required nomenclature fields have defaults
-    nomenclature.setdefault("aliases", "")
-    nomenclature.setdefault("units_text", "")
-    nomenclature.setdefault("groups_text", "")
+    field_data, icc_credentials, nomenclature = normalize_field_data(
+        result.data, client_code, field_code
+    )
     
     context = {
         "request": request,
@@ -867,45 +877,44 @@ async def update_field(
     field_result = cloud_client.get_field_detail(client_code, field_code)
     field_data = field_result.data if field_result.ok else {}
     
-    # If field_result is OK, use it; otherwise rebuild from form data
-    if field_result.ok and isinstance(field_data, dict):
-        # Use the fetched field data
-        context = {
-            "request": request,
-            "field": field_data,
-            "icc_credentials": field_data.get("icc_credentials", {}),
-            "nomenclature": field_data.get("nomenclature", {})
-        }
-    else:
-        # Rebuild from form data
-        rebuilt_icc = {
-            "host": icc_db_host or "",
-            "port": icc_db_port or 5432,
-            "dbname": icc_db_name or "",
-            "user": icc_db_user or ""
-        }
-        
-        rebuilt_nomenclature = {
-            "aliases": field_aliases or "",
-            "units_text": units_mapping or "",
-            "groups_text": groups_mapping or ""
-        }
-        
-        context = {
-            "request": request,
-            "field": {
-                "code": field_code,
-                "name": name,
-                "client": {"code": client_code, "name": ""},
-                "active": active == "true" if active else False,
-                "location_lat": location_lat,
-                "location_lng": location_lng,
-                "timezone": timezone
-            },
-            "icc_credentials": rebuilt_icc,
-            "nomenclature": rebuilt_nomenclature
-        }
+    # Normalize the field data structure
+    field_data, icc_creds, nomenc = normalize_field_data(field_data, client_code, field_code)
     
+    # If we couldn't fetch fresh data, use form data
+    if not field_result.ok:
+        # Override with form data
+        field_data.update({
+            "name": name,
+            "active": active == "true" if active else False,
+            "location_lat": location_lat,
+            "location_lng": location_lng,
+            "timezone": timezone
+        })
+        
+        # Update ICC credentials with form data
+        if icc_db_host:
+            icc_creds["host"] = icc_db_host
+        if icc_db_port:
+            icc_creds["port"] = icc_db_port
+        if icc_db_name:
+            icc_creds["dbname"] = icc_db_name
+        if icc_db_user:
+            icc_creds["user"] = icc_db_user
+        
+        # Update nomenclature with form data
+        if field_aliases:
+            nomenc["aliases"] = field_aliases
+        if units_mapping:
+            nomenc["units_text"] = units_mapping
+        if groups_mapping:
+            nomenc["groups_text"] = groups_mapping
+    
+    context = {
+        "request": request,
+        "field": field_data,
+        "icc_credentials": icc_creds,
+        "nomenclature": nomenc
+    }
     context.update(handle_api_error(result.error_type, result.detail))
     return templates.TemplateResponse("edit_field.html", context)
 
