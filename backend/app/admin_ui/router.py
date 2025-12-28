@@ -761,25 +761,61 @@ async def update_field(
     username: str = Depends(verify_admin_ui),
     cloud_client: CloudAPIClient = Depends(get_cloud_client),
     name: str = Form(...),
-    location: Optional[str] = Form(None),
-    size_ha: Optional[float] = Form(None),
     timezone: str = Form("America/Santiago"),
-    icc_username: Optional[str] = Form(None),
-    icc_password: Optional[str] = Form(None)
+    active: Optional[str] = Form(None),
+    # ICC Credentials
+    icc_db_host: Optional[str] = Form(None),
+    icc_db_port: Optional[int] = Form(None),
+    icc_db_name: Optional[str] = Form(None),
+    icc_db_user: Optional[str] = Form(None),
+    icc_db_password: Optional[str] = Form(None),
+    # Location
+    location_lat: Optional[float] = Form(None),
+    location_lng: Optional[float] = Form(None),
+    # Nomenclature
+    field_aliases: Optional[str] = Form(None),
+    units_mapping: Optional[str] = Form(None),
+    groups_mapping: Optional[str] = Form(None)
 ):
     """Update field via Cloud API"""
     data = {
         "name": name,
-        "location": location if location else None,
-        "size_ha": size_ha,
-        "timezone": timezone
+        "timezone": timezone,
+        "active": active == "true" if active else False
     }
     
-    # Only include ICC credentials if provided
-    if icc_username:
-        data["icc_username"] = icc_username
-    if icc_password:
-        data["icc_password"] = icc_password
+    # Add location if provided
+    if location_lat is not None and location_lng is not None:
+        data["location_lat"] = location_lat
+        data["location_lng"] = location_lng
+    
+    # Add ICC credentials if provided
+    icc_credentials = {}
+    if icc_db_host:
+        icc_credentials["host"] = icc_db_host
+    if icc_db_port:
+        icc_credentials["port"] = icc_db_port
+    if icc_db_name:
+        icc_credentials["dbname"] = icc_db_name
+    if icc_db_user:
+        icc_credentials["user"] = icc_db_user
+    if icc_db_password:
+        icc_credentials["password"] = icc_db_password
+    
+    if icc_credentials:
+        data["icc_credentials"] = icc_credentials
+    
+    # Add nomenclature if provided
+    nomenclature = {}
+    if field_aliases:
+        nomenclature["aliases"] = field_aliases
+    if units_mapping:
+        nomenclature["units_text"] = units_mapping
+    if groups_mapping:
+        nomenclature["groups_text"] = groups_mapping
+    
+    if nomenclature:
+        data["nomenclature"] = nomenclature
     
     result = cloud_client.update_field(client_code, field_code, data)
     
@@ -793,15 +829,46 @@ async def update_field(
     # Need to fetch full field data to get icc_credentials and nomenclature for template
     field_result = cloud_client.get_field_detail(client_code, field_code)
     field_data = field_result.data if field_result.ok else {}
-    icc_credentials = field_data.get("icc_credentials", {}) if isinstance(field_data, dict) else {}
-    nomenclature = field_data.get("nomenclature", {}) if isinstance(field_data, dict) else {}
     
-    context = {
-        "request": request,
-        "field": {**data, "client_code": client_code, "field_code": field_code},
-        "icc_credentials": icc_credentials,
-        "nomenclature": nomenclature
-    }
+    # If field_result is OK, use it; otherwise rebuild from form data
+    if field_result.ok and isinstance(field_data, dict):
+        # Use the fetched field data
+        context = {
+            "request": request,
+            "field": field_data,
+            "icc_credentials": field_data.get("icc_credentials", {}),
+            "nomenclature": field_data.get("nomenclature", {})
+        }
+    else:
+        # Rebuild from form data
+        rebuilt_icc = {
+            "host": icc_db_host or "",
+            "port": icc_db_port or 5432,
+            "dbname": icc_db_name or "",
+            "user": icc_db_user or ""
+        }
+        
+        rebuilt_nomenclature = {
+            "aliases": field_aliases or "",
+            "units_text": units_mapping or "",
+            "groups_text": groups_mapping or ""
+        }
+        
+        context = {
+            "request": request,
+            "field": {
+                "code": field_code,
+                "name": name,
+                "client": {"code": client_code, "name": ""},
+                "active": active == "true" if active else False,
+                "location_lat": location_lat,
+                "location_lng": location_lng,
+                "timezone": timezone
+            },
+            "icc_credentials": rebuilt_icc,
+            "nomenclature": rebuilt_nomenclature
+        }
+    
     context.update(handle_api_error(result.error_type, result.detail))
     return templates.TemplateResponse("edit_field.html", context)
 
