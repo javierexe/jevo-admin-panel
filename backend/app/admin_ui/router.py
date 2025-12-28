@@ -744,11 +744,36 @@ async def edit_field_form(
         return templates.TemplateResponse("edit_field.html", context)
     
     field_data = result.data
+    
+    # Ensure field_data has the required structure
+    if not isinstance(field_data, dict):
+        field_data = {}
+    
+    # Extract or provide defaults for nested objects
+    icc_credentials = field_data.get("icc_credentials", {})
+    if not isinstance(icc_credentials, dict):
+        icc_credentials = {}
+    
+    # Ensure all required ICC credential fields have defaults
+    icc_credentials.setdefault("host", "")
+    icc_credentials.setdefault("port", 5432)
+    icc_credentials.setdefault("dbname", "")
+    icc_credentials.setdefault("user", "")
+    
+    nomenclature = field_data.get("nomenclature", {})
+    if not isinstance(nomenclature, dict):
+        nomenclature = {}
+    
+    # Ensure all required nomenclature fields have defaults
+    nomenclature.setdefault("aliases", "")
+    nomenclature.setdefault("units_text", "")
+    nomenclature.setdefault("groups_text", "")
+    
     context = {
         "request": request,
         "field": field_data,
-        "icc_credentials": field_data.get("icc_credentials", {}) if isinstance(field_data, dict) else {},
-        "nomenclature": field_data.get("nomenclature", {}) if isinstance(field_data, dict) else {}
+        "icc_credentials": icc_credentials,
+        "nomenclature": nomenclature
     }
     return templates.TemplateResponse("edit_field.html", context)
 
