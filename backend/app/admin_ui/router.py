@@ -87,16 +87,14 @@ def normalize_field_data(field_data: dict, client_code: str, field_code: str) ->
     if "code" not in field_data:
         field_data["code"] = field_code
     
-    # Extract or provide defaults for nested objects
-    icc_credentials = field_data.get("icc_credentials", {})
-    if not isinstance(icc_credentials, dict):
-        icc_credentials = {}
-    
-    # Ensure all required ICC credential fields have defaults
-    icc_credentials.setdefault("host", "")
-    icc_credentials.setdefault("port", 5432)
-    icc_credentials.setdefault("dbname", "")
-    icc_credentials.setdefault("user", "")
+    # Extract or provide defaults for ICC credentials
+    # Cloud API devuelve los campos en formato plano, no nested
+    icc_credentials = {
+        "host": field_data.get("icc_db_host", ""),
+        "port": field_data.get("icc_db_port", 5432),
+        "dbname": field_data.get("icc_db_name", ""),
+        "user": field_data.get("icc_db_user", "")
+    }
     
     nomenclature = field_data.get("nomenclature", {})
     if not isinstance(nomenclature, dict):
