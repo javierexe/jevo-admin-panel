@@ -64,7 +64,7 @@
         <div class="border-t border-slate-200 pt-6">
             <h3 class="text-lg font-semibold text-slate-900 mb-2">🗣️ Terminología del Cliente</h3>
             <p class="text-sm text-slate-600 mb-4">
-                Configure los términos que usa este cliente para referirse a unidades, grupos y programas.
+                Configure los términos por defecto para este cliente. Puede ajustarse individualmente en cada campo si es necesario.
                 <strong>Ingrese los términos separados por comas.</strong>
             </p>
             
@@ -74,7 +74,7 @@
                     <input type="text" name="unit_terms"
                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                            placeholder="Ej: estanque, e, terraza, caseta" 
-                           value="{{ terminology.unit_terms }}">
+                           value="{{ terminology.unit_terms or '' }}">
                     <p class="mt-1 text-xs text-slate-500">Términos para referirse a las unidades de riego (separados por comas)</p>
                 </div>
                 
@@ -83,7 +83,7 @@
                     <input type="text" name="group_terms"
                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                            placeholder="Ej: grupo, la, cota, sistema, equipo" 
-                           value="{{ terminology.group_terms }}">
+                           value="{{ terminology.group_terms or '' }}">
                     <p class="mt-1 text-xs text-slate-500">Términos para referirse a grupos de riego (separados por comas)</p>
                 </div>
                 
@@ -92,7 +92,7 @@
                     <input type="text" name="program_terms"
                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                            placeholder="Ej: programa, riego, sector, bloque" 
-                           value="{{ terminology.program_terms }}">
+                           value="{{ terminology.program_terms or '' }}">
                     <p class="mt-1 text-xs text-slate-500">Términos para referirse a programas de riego (separados por comas)</p>
                 </div>
             </div>
